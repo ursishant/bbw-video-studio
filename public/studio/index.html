@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BigBreakingWire • Automated Video Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="studio-header">
+    <div class="logo-wrap">
+      <img src="/assets/bbw_logo.png" alt="BigBreakingWire" class="header-logo" />
+      <div class="header-tagline">
+        <span class="brand-title">BigBreakingWire</span>
+        <span class="badge-tag">Shorts Video Studio</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button id="quickProduceBtn" class="primary-btn pulse-glow" title="Scrape, synthesize voice, and render in a single click!">
+        <span>⚡ 1-Click Auto-Produce Short</span>
+        <div id="quickProduceSpinner" class="spinner hidden"></div>
+      </button>
+      <span class="live-indicator">
+        <span class="pulse-dot"></span> 100% Free & Open Engine
+      </span>
+    </div>
+  </header>
+
+  <main class="studio-container">
+    <!-- Left Column: Article Input & Script Editor -->
+    <section class="studio-left">
+      <!-- 1. Scrape Article Section -->
+      <div class="card scraper-card">
+        <div class="card-header">
+          <div class="step-badge">1</div>
+          <h2>Scrape Article & Auto-Extract</h2>
+        </div>
+        <p class="section-desc">Paste any news article URL to automatically extract headlines, 3D takeaways, and chart data:</p>
+
+        <div class="input-group scrape-row">
+          <input
+            type="url"
+            id="articleUrlInput"
+            placeholder="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
+            value="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
+          />
+          <button id="scrapeBtn" class="primary-btn">
+            <span>⚡ Scrape & Auto-Script</span>
+            <div id="scrapeSpinner" class="spinner hidden"></div>
+          </button>
+        </div>
+
+        <div class="quick-samples">
+          <span>Quick Demos:</span>
+          <button class="sample-btn" data-url="sample-nvidia">🟢 Nvidia Q2 Surges</button>
+          <button class="sample-btn" data-url="sample-rbi">🏛️ RBI MPC Minutes</button>
+          <button class="sample-btn" data-url="sample-buffett">🏛️ Warren Buffett T-Bills</button>
+          <button class="sample-btn" data-url="sample-trumpxi">⚡ Trump-Xi Trade Deal</button>
+        </div>
+      </div>
+
+      <!-- 2. Voice Selection & Atmosphere -->
+      <div class="card voice-card">
+        <div class="card-header">
+          <div class="step-badge">2</div>
+          <h2>Neural Voice & Atmosphere Settings</h2>
+        </div>
+        <p class="section-desc">Choose from 16 neural voices and customize background tension tracks:</p>
+
+        <div class="voice-picker-row">
+          <div class="input-group flex-1">
+            <label for="voiceSelect">Neural Voice Model</label>
+            <select id="voiceSelect">
+              <optgroup label="🌟 Featured & Preferred (Top Pick)">
+                <option value="en-US-RyanMultilingualNeural" selected>Ryan — British BBC-Style News Anchor (Formal & Crisp)</option>
+                <option value="en-US-EricNeural">Eric — High-Energy Business Presenter (Punchy & Fast)</option>
+                <option value="en-US-GuyNeural">Guy — American News Anchor (High-Energy & Viral)</option>
+                <option value="en-US-ChristopherNeural">Christopher — Authoritative Broadcaster (Deep & Formal)</option>
+                <option value="en-US-AndrewNeural">Andrew — Modern Tech & Finance Host (Clear & Confident)</option>
+              </optgroup>
+              <optgroup label="🎙️ Deep & Documentary">
+                <option value="en-US-BrianNeural">Brian — Deep Documentary Narration (Serious & Crisp)</option>
+                <option value="en-US-RogerNeural">Roger — Wall Street Market Analyst (Mature & Serious)</option>
+                <option value="en-US-SteffanNeural">Steffan — Dynamic Storyteller (Conversational)</option>
+              </optgroup>
+              <optgroup label="👩 Female News Broadcasters">
+                <option value="en-US-AriaNeural">Aria — Breaking News Female Host (Crisp & Engaging)</option>
+                <option value="en-US-AvaNeural">Ava — Modern Expressive Presenter (Warm & Natural)</option>
+                <option value="en-US-JennyNeural">Jenny — Clear News Reporter (Friendly & Professional)</option>
+                <option value="en-US-EmmaNeural">Emma — Business & Tech Reporter (Confident & Direct)</option>
+              </optgroup>
+              <optgroup label="🇮🇳 Indian English">
+                <option value="en-IN-PrabhatNeural">Prabhat — Indian English News Presenter (Clear)</option>
+                <option value="en-IN-NeerjaNeural">Neerja — Indian English Expressive Presenter</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="input-group voice-audition-group">
+            <label>&nbsp;</label>
+            <button id="auditionVoiceBtn" class="secondary-btn" title="Click to listen to a voice preview">
+              <span id="auditionIcon">▶</span>
+              <span id="auditionText">Audition</span>
+            </button>
+          </div>
+
+          <div class="input-group" style="width: 140px;">
+            <label for="speechRate">Pacing Rate</label>
+            <select id="speechRate">
+              <option value="+0%">Normal (1.0x)</option>
+              <option value="+8%">Fast (+8%)</option>
+              <option value="+10%" selected>Broadcast (+10%)</option>
+              <option value="+15%">High Voltage (+15%)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Atmosphere & Subtitle Controls Row -->
+        <div class="atmosphere-row">
+          <div class="input-group flex-1">
+            <label for="bgMusicSelect">Background Tension Beat</label>
+            <select id="bgMusicSelect">
+              <option value="assets/news_beat.wav" selected>🎧 Broadcast News Tension Beat (Default)</option>
+              <option value="none">🔕 Mute Background Music (Voice Only)</option>
+            </select>
+          </div>
+
+          <div class="input-group" style="width: 170px;">
+            <label for="subColorSelect">Subtitle Active Color</label>
+            <select id="subColorSelect">
+              <option value="#DC0618" selected>🔴 Breaking Red</option>
+              <option value="#EAB308">🟡 Cyber Yellow</option>
+              <option value="#22C55E">🟢 Electric Lime</option>
+              <option value="#06B6D4">🔵 Neon Cyan</option>
+            </select>
+          </div>
+        </div>
+
+        <audio id="previewSampleAudio" class="hidden"></audio>
+      </div>
+
+      <!-- 3. Edit Script & Multi-Scene Details -->
+      <div class="card script-card">
+        <div class="card-header">
+          <div class="step-badge">3</div>
+          <h2>Shorts Content & Multi-Scene Storyboard</h2>
+        </div>
+
+        <div class="input-group">
+          <label for="videoTitle">Headline / Main Title</label>
+          <input type="text" id="videoTitle" placeholder="e.g. NVIDIA Q2 FY2027: Revenue Surges 106% to $96.2 Billion" />
+        </div>
+
+        <div class="input-group">
+          <label for="heroImage">Hero Image / B-Roll URL</label>
+          <input type="text" id="heroImage" placeholder="https://..." />
+          <img id="imagePreview" src="" alt="Preview" class="img-preview hidden" />
+        </div>
+
+        <div class="input-group">
+          <label>Twitter Hook Bullet Points (3D Scene 1)</label>
+          <input type="text" id="bulletPoint1" class="bullet-input" placeholder="Point 1 (Highlighted)" />
+          <input type="text" id="bulletPoint2" class="bullet-input" placeholder="Point 2" />
+          <input type="text" id="bulletPoint3" class="bullet-input" placeholder="Point 3" />
+        </div>
+
+        <!-- Dynamic Multi-Scene Container -->
+        <div class="scenes-section">
+          <div class="scenes-header">
+            <label>Article Storyboard Scenes (3D Scroll & Highlight)</label>
+            <button type="button" id="addSceneBtn" class="add-scene-btn">➕ Add Scene</button>
+          </div>
+          <div id="scenesContainer" class="scenes-container">
+            <!-- Dynamic Scenes Injected Here -->
+          </div>
+        </div>
+
+        <!-- 4. Adaptive Multi-Type Chart Builder Section -->
+        <div class="chart-builder-section">
+          <div class="chart-toggle-row">
+            <label class="chart-toggle-label">
+              <input type="checkbox" id="enableChartToggle" checked />
+              <span>📊 Include Adaptive Financial Chart Scene</span>
+            </label>
+          </div>
+
+          <div id="chartInputsWrap" class="chart-inputs-wrap">
+            <div class="chart-cols-row">
+              <div class="input-group flex-1">
+                <label for="chartTypeSelect">Chart Visual Type</label>
+                <select id="chartTypeSelect">
+                  <option value="combo-trend" selected>📊 Multi-Period Bars + Trendline (Revenue & Growth)</option>
+                  <option value="area-spline">📈 Glowing Area Spline Curve (Trends & Indexes)</option>
+                  <option value="donut-breakdown">🍩 Donut / Pie Breakdown (Market Share & Segments)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="chartTitle">Chart Headline</label>
+              <input type="text" id="chartTitle" value="NVIDIA Revenue (YoY Surge)" placeholder="e.g. Annual Revenue Growth" />
+            </div>
+
+            <div class="chart-cols-row">
+              <div class="input-group flex-1">
+                <label for="chartPrevLabel">Previous Period Label</label>
+                <input type="text" id="chartPrevLabel" value="Q2 FY2026" placeholder="e.g. Q2 FY26" />
+              </div>
+              <div class="input-group" style="width: 140px;">
+                <label for="chartPrevVal">Previous Value</label>
+                <input type="number" id="chartPrevVal" value="46.7" step="0.1" />
+              </div>
+              <div class="input-group" style="width: 150px;">
+                <label for="chartPrevFmt">Display Text</label>
+                <input type="text" id="chartPrevFmt" value="$46.7B" placeholder="$46.7B" />
+              </div>
+            </div>
+
+            <div class="chart-cols-row">
+              <div class="input-group flex-1">
+                <label for="chartCurrLabel">Current Period Label</label>
+                <input type="text" id="chartCurrLabel" value="Q2 FY2027" placeholder="e.g. Q2 FY27" />
+              </div>
+              <div class="input-group" style="width: 140px;">
+                <label for="chartCurrVal">Current Value</label>
+                <input type="number" id="chartCurrVal" value="96.2" step="0.1" />
+              </div>
+              <div class="input-group" style="width: 150px;">
+                <label for="chartCurrFmt">Display Text</label>
+                <input type="text" id="chartCurrFmt" value="$96.2B" placeholder="$96.2B" />
+              </div>
+            </div>
+
+            <div class="chart-cols-row">
+              <div class="input-group flex-1">
+                <label for="chartBadge">Growth / Surge Badge</label>
+                <input type="text" id="chartBadge" value="+106% YoY SURGE" placeholder="+106% YoY SURGE" />
+              </div>
+              <div class="input-group" style="width: 180px;">
+                <label for="chartSubtitle">Subtext / Unit</label>
+                <input type="text" id="chartSubtitle" value="in Billions USD" placeholder="in Billions USD" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- High-Retention Narration Script & Live Gauge -->
+        <div class="input-group" style="margin-top: 18px;">
+          <div class="script-header-row">
+            <label for="narrationScript">High-Retention Narration Script (Voiceover)</label>
+            <button type="button" id="polishScriptBtn" class="small-action-btn" title="Optimize script for high viewer retention">
+              ✨ Polish Viral Hook
+            </button>
+          </div>
+          <textarea id="narrationScript" rows="4" placeholder="Nvidia has officially delivered one of the most explosive quarters in corporate history..."></textarea>
+          
+          <!-- Live Script Gauge -->
+          <div class="script-gauge-row">
+            <span id="scriptWordCount">📊 48 words</span>
+            <span id="scriptDurationEstimate">⏱️ ~19 seconds</span>
+            <span id="scriptRetentionBadge" class="badge-optimal">🟢 Optimal for Shorts</span>
+          </div>
+        </div>
+
+        <!-- Audio Generation Action -->
+        <div class="audio-action-row">
+          <button id="generateAudioBtn" class="secondary-btn">
+            <span>🎙️ Generate Voiceover & Align Subtitles</span>
+            <div id="audioSpinner" class="spinner hidden"></div>
+          </button>
+          <audio id="audioPlayer" controls class="hidden"></audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Live 9:16 Video Canvas Preview -->
+    <section class="studio-right">
+      <div class="preview-wrapper">
+        <div class="preview-header">
+          <h3>📱 9:16 Video Canvas (1080x1920)</h3>
+          <span class="aspect-badge">Shorts / Reels / TikTok</span>
+        </div>
+
+        <!-- Interactive 9:16 Mobile Mockup -->
+        <div class="mobile-frame">
+          <!-- Rendered Video Player -->
+          <video id="renderedVideoPlayer" class="rendered-video-elem hidden" controls autoplay loop playsinline></video>
+
+          <!-- Mockup Live Screen -->
+          <div id="mockupScreen" class="mobile-screen">
+            <!-- Persistent Top Logo -->
+            <div class="screen-logo-badge">
+              <img src="/assets/bbw_logo.png" alt="BBW" />
+            </div>
+
+            <!-- 3D Card Simulation -->
+            <div class="screen-card-3d">
+              <div class="card-user-row">
+                <div class="avatar-circle">
+                  <img src="/assets/bbw_logo.png" alt="Logo" />
+                </div>
+                <div class="user-meta">
+                  <div class="user-name">BigBreakingWire <span class="verified-tick">✓</span></div>
+                  <div class="user-handle">@BigBreakingWire</div>
+                </div>
+              </div>
+
+              <!-- High-retention highlighted text -->
+              <div class="card-text-body">
+                <span class="highlighted-stroke" id="prevHighlight1">Loading news...</span>
+                <div id="prevPointsList"></div>
+              </div>
+
+              <!-- Hero Image Box -->
+              <div class="card-img-box">
+                <img id="prevImg" src="" alt="Hero" />
+                <div class="card-domain-badge">🔗 <span id="prevDomain">bigbreakingwire.in</span></div>
+              </div>
+            </div>
+
+            <!-- Dynamic Subtitle Simulation -->
+            <div class="screen-subtitle-pill" id="prevSubPill">
+              <span class="sub-word">REVENUE</span>
+              <span class="sub-word active" id="prevActiveSub">SURGED</span>
+              <span class="sub-word">106%</span>
+              <span class="sub-word">GROWTH</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Render & Export Action -->
+        <div class="render-action-card">
+          <button id="renderMp4Btn" class="render-btn">
+            <span>🚀 Render 1080x1920 MP4 Short</span>
+            <div id="renderSpinner" class="spinner hidden"></div>
+          </button>
+
+          <!-- Render Status -->
+          <div id="renderStatusCard" class="render-status hidden">
+            <p id="statusMessage">Encoding 3D video frames with Remotion & FFmpeg...</p>
+            <div id="downloadContainer" class="download-box hidden">
+              <div class="action-buttons-group">
+                <button id="replayVideoBtn" class="replay-btn">🔄 Replay</button>
+                <button id="copyLinkBtn" class="secondary-btn" style="padding: 12px 18px;">📋 Copy Link</button>
+                <a id="downloadVideoLink" href="#" download class="download-btn">
+                  ⬇️ Download MP4
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

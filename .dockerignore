@@ -1,0 +1,4 @@
+node_modules
+public/outputs/*.mp4
+.git
+.DS_Store

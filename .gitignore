@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.log
+public/outputs/*.mp4
+public/audio/props_*.json
+public/audio/narration_*.mp3
+BigBreakingWire_Video_Studio_Handover.zip
+.agents/

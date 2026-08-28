@@ -1,0 +1,36 @@
+{
+  "name": "bbw-video-studio",
+  "version": "1.0.0",
+  "description": "BigBreakingWire Automated AI Video Studio - Professional 9:16 Short-Form Financial & News Video Generator",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "remotion:preview": "remotion preview src/index.ts",
+    "remotion:render": "remotion render src/index.ts BigBreakingWireVideo public/outputs/video.mp4 --public-dir=public",
+    "check-types": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.260",
+    "@remotion/cli": "^4.0.260",
+    "@remotion/media-utils": "^4.0.260",
+    "@remotion/player": "^4.0.260",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "lucide-react": "^0.475.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.260"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "typescript": "^5.7.3"
+  }
+}
