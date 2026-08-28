@@ -1,7 +1,7 @@
 # BigBreakingWire Automated Video Studio Dockerfile
 FROM node:20-bullseye-slim
 
-# Install system dependencies: Chromium, FFmpeg, Python3, pip, and required fonts
+# Install system dependencies: Chromium, FFmpeg, Python3, pip, and fonts
 RUN apt-get update && apt-get install -y \
     chromium \
     ffmpeg \
@@ -18,21 +18,19 @@ RUN apt-get update && apt-get install -y \
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV CHROME_BIN=/usr/bin/chromium
 ENV PORT=3000
+ENV NODE_ENV=production
 
 WORKDIR /app
 
 # Install Python edge-tts library
 RUN pip3 install --no-cache-dir edge-tts
 
-# Copy package files and install Node dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev || npm install
 
-# Copy project source
+# Copy all project source files, assets, audio, and studio UI
 COPY . .
-
-# Generate static SFX and voice preview samples
-RUN python3 server/generate_sfx.py && python3 server/generate_voice_previews.py
 
 EXPOSE 3000
 
