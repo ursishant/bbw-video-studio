@@ -19,7 +19,7 @@ npm start
 
 ## 🌐 2. Instant Live Shareable URL (No Setup Needed)
 If you want to access the studio from your phone or share the link with someone right now:
-👉 **[https://eddie-warrior-halo-estimation.trycloudflare.com](https://eddie-warrior-halo-estimation.trycloudflare.com)**
+👉 **[https://ann-discounted-glenn-knives.trycloudflare.com](https://ann-discounted-glenn-knives.trycloudflare.com)**
 
 To start a new instant public link at any time:
 ```bash
