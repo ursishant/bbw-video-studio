@@ -67,6 +67,15 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
     extrapolateRight: 'clamp',
   });
 
+  const sectionDuration = Math.max(1, durationInFrames / Math.max(1, sections.length));
+  const dynamicActiveIndex = Math.min(
+    sections.length - 1,
+    Math.floor(frame / sectionDuration)
+  );
+  const effectiveActiveIndex = activeSectionIndex !== undefined && activeSectionIndex > 0
+    ? activeSectionIndex
+    : dynamicActiveIndex;
+
   return (
     <div
       style={{
@@ -191,7 +200,15 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
             }}
           >
             {sections.map((sec, idx) => {
-              const isCurrentlyActive = idx === activeSectionIndex;
+              const isCurrentlyActive = idx === effectiveActiveIndex;
+              const sectionStartFrame = idx * sectionDuration;
+              const sectionHighlightProgress = interpolate(
+                frame,
+                [sectionStartFrame + 6, sectionStartFrame + 30],
+                [0, 100],
+                { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+              );
+
               return (
                 <div
                   key={idx}
@@ -242,7 +259,7 @@ export const ArticleView: React.FC<ArticleViewProps> = ({
                           ? `linear-gradient(to right, ${BBW_THEME.highlightYellow} 0%, ${BBW_THEME.highlightYellow} 100%)`
                           : 'none',
                         backgroundRepeat: 'no-repeat',
-                        backgroundSize: isCurrentlyActive ? `${highlightProgress}% 100%` : '0% 100%',
+                        backgroundSize: isCurrentlyActive ? `${sectionHighlightProgress}% 100%` : '0% 100%',
                         padding: isCurrentlyActive ? '2px 6px' : '0',
                         borderRadius: '6px',
                         boxDecorationBreak: 'clone',

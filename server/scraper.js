@@ -128,7 +128,7 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
 
   // Extract punchy bullet points (max 10-15 words each)
   let bulletPoints = [];
-  if (structuredTakeaways.length >= 3) {
+  if (structuredTakeaways.length >= 2) {
     bulletPoints = structuredTakeaways.slice(0, 3).map(t => t.replace(/\s*\([^)]*\)/g, '').trim());
   } else {
     const sentences = paragraphs
@@ -140,6 +140,9 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
     if (bulletPoints.length === 0 && description) bulletPoints.push(description);
   }
 
+  // Smart Chart Auto-Detection from article text
+  const chartData = autoDetectChartData(title, bulletPoints, paragraphs);
+
   // Create fast-paced, high-retention narration script
   let hook = "";
   if (title.toLowerCase().includes('nvidia')) {
@@ -148,6 +151,8 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
     hook = "Warren Buffett just made an unprecedented move in the US Treasury market!";
   } else if (title.toLowerCase().includes('rbi') || title.toLowerCase().includes('repo rate')) {
     hook = "The Reserve Bank of India just released crucial monetary policy decisions!";
+  } else if (title.toLowerCase().includes('gdp') || title.toLowerCase().includes('growth rate')) {
+    hook = `${cleanTitle} just dropped with massive economic implications!`;
   } else if (title.toLowerCase().includes('trump') || title.toLowerCase().includes('tariff')) {
     hook = "Major breaking news on the global trade and tariff front!";
   } else {
@@ -159,11 +164,14 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
   const point2 = bulletPoints[1] ? cleanSentenceForViralSpeech(bulletPoints[1]) : "";
   const point3 = bulletPoints[2] ? cleanSentenceForViralSpeech(bulletPoints[2]) : "";
 
-  let fullNarration = `${hook} ${point1}. ${point2}. Follow BigBreakingWire for daily breaking market updates.`;
+  let fullNarration = "";
+  if (chartData && chartData.enabled && chartData.changeBadge) {
+    const chartSpeech = `${chartData.title} shows a surge to ${chartData.currFormatted || chartData.currValue}, marking ${chartData.changeBadge}.`;
+    fullNarration = `${hook} ${chartSpeech} ${point1}. ${point2}. Follow BigBreakingWire for daily breaking market and news updates.`;
+  } else {
+    fullNarration = `${hook} ${point1}. ${point2}. ${point3 ? point3 + '.' : ''} Follow BigBreakingWire for daily breaking market and news updates.`;
+  }
   fullNarration = fullNarration.replace(/\s+/g, ' ').replace(/\.\./g, '.').trim();
-
-  // Smart Chart Auto-Detection from article text
-  const chartData = autoDetectChartData(title, bulletPoints, paragraphs);
 
   // Build section slides with clear headings and distinct highlights
   const articleSections = [
@@ -174,7 +182,7 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
     },
     {
       heading: "📊 Market Outlook",
-      content: (bulletPoints[1] ? bulletPoints[1] + ". " : "") + (bulletPoints[2] || ""),
+      content: bulletPoints[1] || (bulletPoints[2] ? bulletPoints[2] : description || title),
       highlight: extractHighlightPhrase(bulletPoints[1] || bulletPoints[2] || "")
     }
   ];
@@ -191,8 +199,8 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
       accountName: "BigBreakingWire",
       handle: "@BigBreakingWire",
       verified: true,
-      text: bulletPoints.join('\n\n'),
-      bulletPoints,
+      text: (bulletPoints[0] || title) + (bulletPoints[1] ? `\n\n${bulletPoints[1]}` : ''),
+      bulletPoints: bulletPoints.length > 0 ? bulletPoints.slice(0, 2) : [title],
       highlightPhrase: extractHighlightPhrase(bulletPoints[0] || title)
     },
     chartData,
@@ -211,67 +219,67 @@ function generateShortsScriptFromContent({ url, domain, title, category, descrip
  * Intelligent Chart Extractor: Finds numeric comparisons in text
  */
 function autoDetectChartData(title, bulletPoints, paragraphs) {
-  const combinedText = [title, ...bulletPoints, ...paragraphs.slice(0, 3)].join(' ');
+  const combinedText = [title, ...bulletPoints, ...paragraphs.slice(0, 4)].join(' ');
 
   // 1. Check for Billions / Millions comparison (e.g. $96.2B vs $46.7B or 106% YoY)
-  if (combinedText.match(/(\$[\d.]+\s*B|\b[\d.]+\s*billion)/i)) {
-    const numbers = combinedText.match(/\$?(\d+(?:\.\d+)?)\s*(?:billion|B)\b/gi) || [];
+  if (combinedText.match(/(\$[\d.]+\s*B|\b[\d.]+\s*billion|\bRs\s*[\d.]+\s*lakh)/i)) {
+    const numbers = combinedText.match(/\$?(\d+(?:\.\d+)?)\s*(?:billion|B|lakh\s*crore)\b/gi) || [];
     const parsedNums = numbers.map(n => parseFloat(n.replace(/[^0-9.]/g, ''))).filter(n => n > 0);
     
     if (parsedNums.length >= 2) {
       const prev = Math.min(...parsedNums.slice(0, 4));
       const curr = Math.max(...parsedNums.slice(0, 4));
-      const growth = Math.round(((curr - prev) / prev) * 100);
+      const growth = prev > 0 ? Math.round(((curr - prev) / prev) * 100) : 0;
       return {
         enabled: true,
         type: 'combo-trend',
-        title: `${title.substring(0, 30)} (Growth Trajectory)`,
-        subtitle: 'in Billions USD',
+        title: `${cleanTitleForSpeech(title).substring(0, 32)} (Growth)`,
+        subtitle: 'in Billions USD / Index',
         prevLabel: 'Previous Period',
         prevValue: prev,
         prevFormatted: `$${prev}B`,
         currLabel: 'Current Period',
         currValue: curr,
         currFormatted: `$${curr}B`,
-        changeBadge: growth > 0 ? `+${growth}% YoY SURGE` : `${growth}% CHANGE`,
+        changeBadge: growth > 0 ? `+${growth}% SURGE` : `${growth}% CHANGE`,
         isPositive: growth >= 0
       };
     }
   }
 
-  // 2. Check for Percentages (e.g. Repo Rate 5.25%, GDP 6.7%, Tariffs 47%)
+  // 2. Check for Percentages (e.g. Repo Rate 5.25%, GDP 7.8%, Growth 10.3%)
   const percentMatches = combinedText.match(/(\d+(?:\.\d+)?)\s*%/g) || [];
   if (percentMatches.length >= 2) {
     const nums = percentMatches.map(p => parseFloat(p.replace('%', ''))).filter(n => n > 0);
     return {
       enabled: true,
       type: 'area-spline',
-      title: 'Economic Outlook & Key Metrics',
+      title: `${cleanTitleForSpeech(title).substring(0, 32)} (Metrics)`,
       subtitle: 'Percentage Projections',
       prevLabel: 'Baseline Metric',
       prevValue: nums[0],
       prevFormatted: `${nums[0]}%`,
-      currLabel: 'Target Projection',
+      currLabel: 'Current Metric',
       currValue: nums[1] || nums[0],
       currFormatted: `${nums[1] || nums[0]}%`,
-      changeBadge: `${nums[1] || nums[0]}% TARGET`,
+      changeBadge: `${nums[1] || nums[0]}% RECORD`,
       isPositive: true
     };
   }
 
-  // Default fallback chart if numbers not immediately parsed
+  // If no explicit comparative metrics in article, disable chart so fake charts don't desync VO
   return {
-    enabled: true,
+    enabled: false,
     type: 'combo-trend',
-    title: 'Market Performance Trajectory',
-    subtitle: 'Quarterly Growth Index',
-    prevLabel: 'Previous Cycle',
-    prevValue: 45.0,
-    prevFormatted: '45.0',
-    currLabel: 'Current Cycle',
-    currValue: 88.5,
-    currFormatted: '88.5',
-    changeBadge: '+96.7% SURGE',
+    title: '',
+    subtitle: '',
+    prevLabel: '',
+    prevValue: 0,
+    prevFormatted: '',
+    currLabel: '',
+    currValue: 0,
+    currFormatted: '',
+    changeBadge: '',
     isPositive: true
   };
 }

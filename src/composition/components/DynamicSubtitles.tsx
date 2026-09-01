@@ -23,7 +23,7 @@ export const DynamicSubtitles: React.FC<DynamicSubtitlesProps> = ({ words, highl
   const currentOrLastIndex =
     activeWordIndex !== -1
       ? activeWordIndex
-      : words.findLastIndex((w) => currentTime >= w.end && currentTime <= w.end + 0.3);
+      : words.findLastIndex((w) => currentTime >= w.end && currentTime <= w.end + 0.45);
 
   if (currentOrLastIndex === -1) return null;
 

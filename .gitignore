@@ -4,5 +4,8 @@ node_modules/
 public/outputs/*.mp4
 public/audio/props_*.json
 public/audio/narration_*.mp3
+public/audio/narration_*_words.json
+public/audio/*_gen.py
+public/audio/*_script.txt
 BigBreakingWire_Video_Studio_Handover.zip
 .agents/

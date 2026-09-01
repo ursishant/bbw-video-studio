@@ -104,16 +104,16 @@ export const TwitterCard: React.FC<TwitterCardProps> = ({ data, imageUrl, domain
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
             <div
               style={{
-                width: '74px',
-                height: '74px',
+                width: '92px',
+                height: '92px',
                 borderRadius: '50%',
                 backgroundColor: BBW_THEME.white,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 14px rgba(2, 34, 94, 0.12)',
-                border: '2px solid #E2E8F0',
-                padding: '6px',
+                boxShadow: '0 6px 18px rgba(2, 34, 94, 0.14)',
+                border: '2.5px solid #CBD5E1',
+                padding: '8px',
                 boxSizing: 'border-box',
                 overflow: 'hidden',
                 flexShrink: 0,
@@ -122,7 +122,7 @@ export const TwitterCard: React.FC<TwitterCardProps> = ({ data, imageUrl, domain
               <img
                 src={staticFile('assets/bbw_logo.png')}
                 alt="BBW"
-                style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             </div>
 

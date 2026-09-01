@@ -534,6 +534,22 @@ document.querySelectorAll('.sample-btn').forEach(btn => {
   });
 });
 
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    if (!res.ok) {
+      throw new Error(`Server returned ${res.status} ${res.statusText}. Please make sure the local server (npm start) is running.`);
+    }
+    throw new Error('Received non-JSON response from server.');
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || `Server error (${res.status})`);
+  }
+  return data;
+}
+
 // 1. Scrape URL
 scrapeBtn.addEventListener('click', async () => {
   const url = urlInput.value.trim();
@@ -546,18 +562,17 @@ scrapeBtn.addEventListener('click', async () => {
   scrapeBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/scrape', {
+    const result = await fetchJson('/api/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
     });
 
-    const result = await res.json();
     if (result.success && result.data) {
       currentVideoData = result.data;
       populateFormFromData(result.data);
     } else {
-      alert(`Scraping failed: ${result.error}`);
+      alert(`Scraping failed: ${result.error || 'Unknown error'}`);
     }
   } catch (err) {
     alert(`Error scraping article: ${err.message}`);
@@ -579,7 +594,7 @@ generateAudioBtn.addEventListener('click', async () => {
   generateAudioBtn.disabled = true;
 
   try {
-    const res = await fetch('/api/generate-voice', {
+    const result = await fetchJson('/api/generate-voice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -589,17 +604,18 @@ generateAudioBtn.addEventListener('click', async () => {
       })
     });
 
-    const result = await res.json();
     if (result.success) {
       currentVideoData.audioUrl = result.audioUrl;
       currentVideoData.durationInSeconds = result.durationInSeconds;
       currentVideoData.words = result.words;
+      currentVideoData.generatedText = text;
+      currentVideoData.generatedVoice = voiceSelect.value;
 
-      audioPlayer.src = `/${result.audioUrl}`;
+      audioPlayer.src = result.audioUrl.startsWith('/') ? result.audioUrl : `/${result.audioUrl}`;
       audioPlayer.classList.remove('hidden');
-      audioPlayer.play();
+      audioPlayer.play().catch(() => {});
     } else {
-      alert(`Voice generation failed: ${result.error}`);
+      alert(`Voice generation failed: ${result.error || 'Unknown error'}`);
     }
   } catch (err) {
     alert(`Error generating voiceover: ${err.message}`);
@@ -613,6 +629,8 @@ generateAudioBtn.addEventListener('click', async () => {
 replayVideoBtn.addEventListener('click', () => {
   if (renderedVideoPlayer.src) {
     renderedVideoPlayer.currentTime = 0;
+    renderedVideoPlayer.muted = false;
+    renderedVideoPlayer.volume = 1.0;
     renderedVideoPlayer.play();
   }
 });
@@ -630,20 +648,25 @@ copyLinkBtn.addEventListener('click', () => {
 
 // 3. Render 1080x1920 MP4 Video
 async function triggerRenderPipeline() {
-  if (!currentVideoData.audioUrl) {
-    const text = narrationScript.value.trim();
-    if (!text) {
-      alert('Please enter narration script first!');
-      return;
-    }
-    
+  const text = narrationScript.value.trim();
+  if (!text) {
+    alert('Please enter narration script first!');
+    return;
+  }
+
+  // Always generate fresh voiceover if none exists or script/voice was changed
+  if (
+    !currentVideoData.audioUrl ||
+    currentVideoData.generatedText !== text ||
+    currentVideoData.generatedVoice !== voiceSelect.value
+  ) {
     statusMessage.innerText = `Generating voiceover with ${voiceSelect.value}...`;
     renderStatusCard.classList.remove('hidden');
     renderSpinner.classList.remove('hidden');
     renderMp4Btn.disabled = true;
 
     try {
-      const voiceRes = await fetch('/api/generate-voice', {
+      const voiceData = await fetchJson('/api/generate-voice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -652,11 +675,12 @@ async function triggerRenderPipeline() {
           rate: speechRateSelect.value
         })
       });
-      const voiceData = await voiceRes.json();
-      if (!voiceData.success) throw new Error(voiceData.error);
+      if (!voiceData.success) throw new Error(voiceData.error || 'Voice generation failed');
       currentVideoData.audioUrl = voiceData.audioUrl;
       currentVideoData.durationInSeconds = voiceData.durationInSeconds;
       currentVideoData.words = voiceData.words;
+      currentVideoData.generatedText = text;
+      currentVideoData.generatedVoice = voiceSelect.value;
     } catch (e) {
       statusMessage.innerText = `❌ Voice generation failed: ${e.message}`;
       renderSpinner.classList.add('hidden');
@@ -727,13 +751,12 @@ async function triggerRenderPipeline() {
   renderMp4Btn.disabled = true;
 
   try {
-    const res = await fetch('/api/render-video', {
+    const result = await fetchJson('/api/render-video', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ videoProps: payloadProps, compositionId: 'BigBreakingWireVideo' })
     });
 
-    const result = await res.json();
     if (result.success) {
       statusMessage.innerText = "✅ Video rendered successfully! Watch preview below:";
       downloadVideoLink.href = result.videoUrl;
@@ -743,9 +766,15 @@ async function triggerRenderPipeline() {
       mockupScreen.classList.add('hidden');
       renderedVideoPlayer.src = result.videoUrl;
       renderedVideoPlayer.classList.remove('hidden');
-      renderedVideoPlayer.play().catch(e => console.log("Autoplay:", e));
+      renderedVideoPlayer.muted = false;
+      renderedVideoPlayer.volume = 1.0;
+      renderedVideoPlayer.play().catch(e => {
+        console.log("Browser policy blocked unmuted autoplay:", e);
+        renderedVideoPlayer.muted = true;
+        renderedVideoPlayer.play().catch(() => {});
+      });
     } else {
-      statusMessage.innerText = `❌ Render error: ${result.error}`;
+      statusMessage.innerText = `❌ Render error: ${result.error || 'Unknown error'}`;
     }
   } catch (err) {
     statusMessage.innerText = `❌ Request error: ${err.message}`;
@@ -770,19 +799,18 @@ quickProduceBtn.addEventListener('click', async () => {
 
   try {
     // 1. Scrape
-    const scrapeRes = await fetch('/api/scrape', {
+    const scrapeData = await fetchJson('/api/scrape', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
     });
-    const scrapeData = await scrapeRes.json();
     if (!scrapeData.success) throw new Error(scrapeData.error || 'Scraping failed');
 
     currentVideoData = scrapeData.data;
     populateFormFromData(scrapeData.data);
 
     // 2. Generate Voice
-    const voiceRes = await fetch('/api/generate-voice', {
+    const voiceData = await fetchJson('/api/generate-voice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -791,7 +819,6 @@ quickProduceBtn.addEventListener('click', async () => {
         rate: speechRateSelect.value
       })
     });
-    const voiceData = await voiceRes.json();
     if (!voiceData.success) throw new Error(voiceData.error || 'Voice generation failed');
 
     currentVideoData.audioUrl = voiceData.audioUrl;

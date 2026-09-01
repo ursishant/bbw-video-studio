@@ -58,6 +58,7 @@ export const defaultShortVideoProps: VideoSchema = {
     subtext: "Like • Share • Subscribe"
   },
   durationInSeconds: 22,
+  audioUrl: "audio/narration_1788238658240.mp3",
   words: []
 };
 

@@ -77,10 +77,10 @@ export const OutroCTA: React.FC<OutroCTAProps> = ({
         <div
           style={{
             backgroundColor: BBW_THEME.white,
-            padding: '24px 48px',
-            borderRadius: '28px',
-            boxShadow: '0 20px 50px rgba(2, 34, 94, 0.12)',
-            border: '1px solid rgba(2, 34, 94, 0.08)',
+            padding: '28px 60px',
+            borderRadius: '32px',
+            boxShadow: '0 24px 60px rgba(2, 34, 94, 0.16)',
+            border: '2px solid rgba(2, 34, 94, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -90,7 +90,7 @@ export const OutroCTA: React.FC<OutroCTAProps> = ({
             src={staticFile('assets/bbw_logo.png')}
             alt="BigBreakingWire"
             style={{
-              height: '82px',
+              height: '110px',
               width: 'auto',
               objectFit: 'contain',
               display: 'block',
