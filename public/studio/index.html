@@ -190,7 +190,16 @@
         </div>
 
         <div class="input-group">
-          <label>Twitter Hook Bullet Points (3D Scene 1)</label>
+          <label for="sceneOrderSelect">🎬 Scene Flow Direction / Sequence Order</label>
+          <select id="sceneOrderSelect">
+            <option value="hook-first" selected>⚡ Twitter Hook Card ➔ Chart ➔ Article View (Default Hook First)</option>
+            <option value="article-first">📖 Article View (Takeaways) ➔ Chart ➔ Twitter Hook Card (Article First)</option>
+            <option value="chart-first">📊 Financial Chart ➔ Twitter Card ➔ Article View (Chart First)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Twitter Hook Bullet Points (3D Scene)</label>
           <input type="text" id="bulletPoint1" class="bullet-input" placeholder="Point 1 (Highlighted)" />
           <input type="text" id="bulletPoint2" class="bullet-input" placeholder="Point 2" />
           <input type="text" id="bulletPoint3" class="bullet-input" placeholder="Point 3" />

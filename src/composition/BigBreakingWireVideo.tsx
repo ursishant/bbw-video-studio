@@ -25,9 +25,10 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
   articleSections = [],
   chartData,
   outro,
-  audioUrl,
+  audioUrl = '',
   bgMusicUrl,
   subtitleColor = BBW_THEME.breakingRed,
+  sceneOrder = 'hook-first',
   words = [],
 }) => {
   const { fps, durationInFrames } = useVideoConfig();
@@ -51,7 +52,7 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
       .map((w) => Math.round(w.end * fps));
 
     if (hasChart) {
-      // Scene 1: Twitter Hook (ideal ~30% of speech)
+      // Scene 1: Twitter Hook (ideal ~32% of speech)
       const idealTwitterEnd = Math.round(contentFrames * 0.32);
       const matchedTwitterEnd = sentenceEndFrames.find(
         (f) => f >= Math.round(fps * 2.5) && f <= Math.round(contentFrames * 0.45)
@@ -69,7 +70,7 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
       // Scene 3: Article Takeaways
       articleDuration = Math.max(Math.round(fps * 2), contentFrames - twitterDuration - chartDuration);
     } else {
-      // Scene 1: Twitter Hook (ideal ~40% of speech)
+      // Scene 1: Twitter Hook (ideal ~42% of speech)
       const idealTwitterEnd = Math.round(contentFrames * 0.42);
       const matchedTwitterEnd = sentenceEndFrames.find(
         (f) => f >= Math.round(fps * 3) && f <= Math.round(contentFrames * 0.58)
@@ -89,6 +90,30 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
       twitterDuration = Math.round(contentFrames * 0.45);
       articleDuration = contentFrames - twitterDuration;
     }
+  }
+
+  // Dynamic Scene Start Offsets based on user-chosen flow direction
+  let twitterStart = 0;
+  let chartStart = 0;
+  let articleStart = 0;
+
+  if (sceneOrder === 'article-first') {
+    articleStart = 0;
+    if (hasChart) {
+      chartStart = articleDuration;
+      twitterStart = articleDuration + chartDuration;
+    } else {
+      twitterStart = articleDuration;
+    }
+  } else if (sceneOrder === 'chart-first' && hasChart) {
+    chartStart = 0;
+    twitterStart = chartDuration;
+    articleStart = chartDuration + twitterDuration;
+  } else {
+    // Default 'hook-first': Twitter -> Chart -> Article
+    twitterStart = 0;
+    chartStart = twitterDuration;
+    articleStart = twitterDuration + chartDuration;
   }
 
   // Helper to normalize audio path for Remotion staticFile
@@ -155,22 +180,25 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
         <HeaderLogo />
       </Sequence>
 
-      {/* SCENE 1: Twitter / X UI Card with 3D Motion */}
-      <Sequence from={0} durationInFrames={twitterDuration}>
-        <TwitterCard
-          data={twitterCard}
-          imageUrl={imageUrl}
-          domain={domain}
-        />
-        {/* SFX: Marker highlight swipe */}
-        <Sequence from={18} durationInFrames={20}>
-          <Audio src={staticFile('assets/marker_sfx.wav')} volume={0.32} />
+      {/* SCENE: Twitter / X UI Card with 3D Motion */}
+      {twitterDuration > 0 && (
+        <Sequence from={twitterStart} durationInFrames={twitterDuration}>
+          {twitterStart > 0 && <Audio src={staticFile('assets/whoosh.wav')} volume={0.3} />}
+          <TwitterCard
+            data={twitterCard}
+            imageUrl={imageUrl}
+            domain={domain}
+          />
+          {/* SFX: Marker highlight swipe */}
+          <Sequence from={18} durationInFrames={20}>
+            <Audio src={staticFile('assets/marker_sfx.wav')} volume={0.32} />
+          </Sequence>
         </Sequence>
-      </Sequence>
+      )}
 
-      {/* OPTIONAL SCENE 2: 3D Adaptive Financial Chart */}
+      {/* OPTIONAL SCENE: 3D Adaptive Financial Chart */}
       {hasChart && chartDuration > 0 && (
-        <Sequence from={twitterDuration} durationInFrames={chartDuration}>
+        <Sequence from={chartStart} durationInFrames={chartDuration}>
           <Audio src={staticFile('assets/whoosh.wav')} volume={0.3} />
           <AnimatedChartScene
             data={chartData}
@@ -180,13 +208,13 @@ export const BigBreakingWireVideo: React.FC<VideoSchema> = ({
         </Sequence>
       )}
 
-      {/* SCENE 3: Article View with Unified 3D Depth & Timed Section Highlighting */}
+      {/* SCENE: Article View with Unified 3D Depth & Timed Section Highlighting */}
       {articleDuration > 0 && (
         <Sequence
-          from={twitterDuration + chartDuration}
+          from={articleStart}
           durationInFrames={articleDuration}
         >
-          <Audio src={staticFile('assets/whoosh.wav')} volume={0.28} />
+          {articleStart > 0 && <Audio src={staticFile('assets/whoosh.wav')} volume={0.28} />}
           <ArticleView
             title={title}
             sections={articleSections}

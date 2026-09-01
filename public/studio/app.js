@@ -213,6 +213,7 @@ const syncFromNarrationBtn = document.getElementById('syncFromNarrationBtn');
 const videoTitleInput = document.getElementById('videoTitle');
 const heroImageInput = document.getElementById('heroImage');
 const imagePreview = document.getElementById('imagePreview');
+const sceneOrderSelect = document.getElementById('sceneOrderSelect');
 const bullet1Input = document.getElementById('bulletPoint1');
 const bullet2Input = document.getElementById('bulletPoint2');
 const bullet3Input = document.getElementById('bulletPoint3');
@@ -416,6 +417,10 @@ function populateFormFromData(data) {
     prevImg.src = data.imageUrl;
   }
   
+  if (sceneOrderSelect && data.sceneOrder) {
+    sceneOrderSelect.value = data.sceneOrder;
+  }
+
   if (data.twitterCard?.bulletPoints) {
     bullet1Input.value = data.twitterCard.bulletPoints[0] || "";
     bullet2Input.value = data.twitterCard.bulletPoints[1] || "";
@@ -623,7 +628,8 @@ async function handleParseScript(scriptText, spinnerEl, btnEl) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         scriptText: scriptText.trim(),
-        title: videoTitleInput.value.trim()
+        title: "",
+        sceneOrder: sceneOrderSelect ? sceneOrderSelect.value : 'hook-first'
       })
     });
 
@@ -808,7 +814,8 @@ async function triggerRenderPipeline() {
     words: currentVideoData.words || [],
     audioUrl: currentVideoData.audioUrl || "",
     bgMusicUrl: bgMusicSelect.value || "assets/news_beat.wav",
-    subtitleColor: subColorSelect.value || "#DC0618"
+    subtitleColor: subColorSelect.value || "#DC0618",
+    sceneOrder: sceneOrderSelect?.value || "hook-first"
   };
 
   renderStatusCard.classList.remove('hidden');

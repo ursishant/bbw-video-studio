@@ -55,6 +55,7 @@ export interface VideoSchema {
   audioUrl?: string;
   bgMusicUrl?: string;
   subtitleColor?: string;
+  sceneOrder?: 'hook-first' | 'article-first' | 'chart-first';
   durationInSeconds: number;
   words: SubtitleWord[];
   voice?: string;
