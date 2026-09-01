@@ -6,6 +6,7 @@ const { exec } = require('child_process');
 const { scrapeArticle } = require('./scraper');
 const { generateSpeechWithTimestamps } = require('./tts');
 const { fetchBRollForKeyword } = require('./broll');
+const { parseScriptToStoryboard } = require('./scriptParser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,20 +42,45 @@ app.get('/api/voices', (req, res) => {
   res.json({ success: true, voices: VOICES_CATALOG });
 });
 
-// 1. Scrape Article URL
+// 1. Scrape Article URL or Auto-Extract Script
 app.post('/api/scrape', async (req, res) => {
   try {
     const { url } = req.body;
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
+    if (!url || !url.trim()) {
+      return res.status(400).json({ error: 'URL or text script is required' });
     }
 
-    console.log(`[Scraper] Scraping URL: ${url}`);
-    const articleData = await scrapeArticle(url);
+    const trimmed = url.trim();
+    // If user pasted script text instead of an HTTP URL, automatically parse as script
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+      console.log(`[Smart Input] Text detected in URL field (${trimmed.length} chars), routing to script parser...`);
+      const storyboardData = await parseScriptToStoryboard(trimmed);
+      return res.json({ success: true, data: storyboardData });
+    }
+
+    console.log(`[Scraper] Scraping URL: ${trimmed}`);
+    const articleData = await scrapeArticle(trimmed);
     res.json({ success: true, data: articleData });
   } catch (error) {
     console.error('[Scraper Error]', error);
     res.status(500).json({ error: error.message || 'Failed to scrape article' });
+  }
+});
+
+// 1.5. Parse Custom Script into 3D Storyboard & Find Image
+app.post('/api/parse-script', async (req, res) => {
+  try {
+    const { scriptText, title } = req.body;
+    if (!scriptText || !scriptText.trim()) {
+      return res.status(400).json({ error: 'Script text is required' });
+    }
+
+    console.log(`[Script Parser] Extracting storyboard from script (${scriptText.length} chars)...`);
+    const storyboardData = await parseScriptToStoryboard(scriptText, title || '');
+    res.json({ success: true, data: storyboardData });
+  } catch (error) {
+    console.error('[Script Parser Error]', error);
+    res.status(500).json({ error: error.message || 'Failed to parse script' });
   }
 });
 

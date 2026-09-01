@@ -173,6 +173,44 @@ body {
   margin-bottom: 16px;
 }
 
+/* Mode Switcher Tabs */
+.input-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  background-color: var(--light-bg);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted-gray);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.mode-tab:hover {
+  color: var(--primary-navy);
+}
+
+.mode-tab.active {
+  background-color: var(--white);
+  color: var(--primary-navy);
+  box-shadow: 0 2px 8px rgba(2, 34, 94, 0.08);
+}
+
 /* Scrape Row */
 .scrape-row {
   display: flex;

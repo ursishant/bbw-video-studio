@@ -196,9 +196,19 @@ const samplePresets = {
 const quickProduceBtn = document.getElementById('quickProduceBtn');
 const quickProduceSpinner = document.getElementById('quickProduceSpinner');
 
+const modeTabUrl = document.getElementById('modeTabUrl');
+const modeTabScript = document.getElementById('modeTabScript');
+const modeUrlWrap = document.getElementById('modeUrlWrap');
+const modeScriptWrap = document.getElementById('modeScriptWrap');
+
 const urlInput = document.getElementById('articleUrlInput');
 const scrapeBtn = document.getElementById('scrapeBtn');
 const scrapeSpinner = document.getElementById('scrapeSpinner');
+
+const customScriptInput = document.getElementById('customScriptInput');
+const parseScriptBtn = document.getElementById('parseScriptBtn');
+const parseScriptSpinner = document.getElementById('parseScriptSpinner');
+const syncFromNarrationBtn = document.getElementById('syncFromNarrationBtn');
 
 const videoTitleInput = document.getElementById('videoTitle');
 const heroImageInput = document.getElementById('heroImage');
@@ -550,6 +560,21 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+// Mode Switching Tabs
+modeTabUrl?.addEventListener('click', () => {
+  modeTabUrl.classList.add('active');
+  modeTabScript.classList.remove('active');
+  modeUrlWrap.classList.remove('hidden');
+  modeScriptWrap.classList.add('hidden');
+});
+
+modeTabScript?.addEventListener('click', () => {
+  modeTabScript.classList.add('active');
+  modeTabUrl.classList.remove('active');
+  modeScriptWrap.classList.remove('hidden');
+  modeUrlWrap.classList.add('hidden');
+});
+
 // 1. Scrape URL
 scrapeBtn.addEventListener('click', async () => {
   const url = urlInput.value.trim();
@@ -580,6 +605,48 @@ scrapeBtn.addEventListener('click', async () => {
     scrapeSpinner.classList.add('hidden');
     scrapeBtn.disabled = false;
   }
+});
+
+// 1.5. Extract Storyboard & Image from Custom Script
+async function handleParseScript(scriptText, spinnerEl, btnEl) {
+  if (!scriptText || !scriptText.trim()) {
+    alert('Please enter or paste your script text first!');
+    return;
+  }
+
+  if (spinnerEl) spinnerEl.classList.remove('hidden');
+  if (btnEl) btnEl.disabled = true;
+
+  try {
+    const result = await fetchJson('/api/parse-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        scriptText: scriptText.trim(),
+        title: videoTitleInput.value.trim()
+      })
+    });
+
+    if (result.success && result.data) {
+      currentVideoData = result.data;
+      populateFormFromData(result.data);
+    } else {
+      alert(`Script parsing failed: ${result.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    alert(`Error parsing script: ${err.message}`);
+  } finally {
+    if (spinnerEl) spinnerEl.classList.add('hidden');
+    if (btnEl) btnEl.disabled = false;
+  }
+}
+
+parseScriptBtn?.addEventListener('click', () => {
+  handleParseScript(customScriptInput.value, parseScriptSpinner, parseScriptBtn);
+});
+
+syncFromNarrationBtn?.addEventListener('click', () => {
+  handleParseScript(narrationScript.value, null, syncFromNarrationBtn);
 });
 
 // 2. Generate Audio & Timestamps
@@ -788,8 +855,15 @@ renderMp4Btn.addEventListener('click', triggerRenderPipeline);
 
 // ⚡ 1-Click Auto-Produce (End-to-End Pipeline in 1 Click)
 quickProduceBtn.addEventListener('click', async () => {
+  const isScriptMode = modeTabScript && modeTabScript.classList.contains('active');
   const url = urlInput.value.trim();
-  if (!url) {
+  const scriptText = (customScriptInput?.value || narrationScript?.value || '').trim();
+
+  if (isScriptMode && !scriptText) {
+    alert('Please enter or paste your script first!');
+    return;
+  }
+  if (!isScriptMode && !url) {
     alert('Please enter an article URL first!');
     return;
   }
@@ -798,16 +872,30 @@ quickProduceBtn.addEventListener('click', async () => {
   quickProduceBtn.disabled = true;
 
   try {
-    // 1. Scrape
-    const scrapeData = await fetchJson('/api/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
-    if (!scrapeData.success) throw new Error(scrapeData.error || 'Scraping failed');
-
-    currentVideoData = scrapeData.data;
-    populateFormFromData(scrapeData.data);
+    if (isScriptMode) {
+      // 1. Extract from script & find image
+      const parsedData = await fetchJson('/api/parse-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scriptText,
+          title: videoTitleInput.value.trim()
+        })
+      });
+      if (!parsedData.success) throw new Error(parsedData.error || 'Script extraction failed');
+      currentVideoData = parsedData.data;
+      populateFormFromData(parsedData.data);
+    } else {
+      // 1. Scrape URL
+      const scrapeData = await fetchJson('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      if (!scrapeData.success) throw new Error(scrapeData.error || 'Scraping failed');
+      currentVideoData = scrapeData.data;
+      populateFormFromData(scrapeData.data);
+    }
 
     // 2. Generate Voice
     const voiceData = await fetchJson('/api/generate-voice', {
@@ -824,6 +912,8 @@ quickProduceBtn.addEventListener('click', async () => {
     currentVideoData.audioUrl = voiceData.audioUrl;
     currentVideoData.durationInSeconds = voiceData.durationInSeconds;
     currentVideoData.words = voiceData.words;
+    currentVideoData.generatedText = currentVideoData.fullNarration;
+    currentVideoData.generatedVoice = voiceSelect.value;
 
     // 3. Render
     await triggerRenderPipeline();

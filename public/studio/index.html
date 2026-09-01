@@ -34,33 +34,60 @@
   <main class="studio-container">
     <!-- Left Column: Article Input & Script Editor -->
     <section class="studio-left">
-      <!-- 1. Scrape Article Section -->
+      <!-- 1. Scrape Article or Custom Script Section -->
       <div class="card scraper-card">
         <div class="card-header">
           <div class="step-badge">1</div>
-          <h2>Scrape Article & Auto-Extract</h2>
+          <h2>Input Article URL or Custom Script</h2>
         </div>
-        <p class="section-desc">Paste any news article URL to automatically extract headlines, 3D takeaways, and chart data:</p>
+        <p class="section-desc">Paste an article URL or provide your own script to auto-generate storyboard scenes, charts, and find matching imagery:</p>
 
-        <div class="input-group scrape-row">
-          <input
-            type="url"
-            id="articleUrlInput"
-            placeholder="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
-            value="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
-          />
-          <button id="scrapeBtn" class="primary-btn">
-            <span>⚡ Scrape & Auto-Script</span>
-            <div id="scrapeSpinner" class="spinner hidden"></div>
-          </button>
+        <!-- Mode Switcher Tabs -->
+        <div class="input-mode-tabs">
+          <button id="modeTabUrl" class="mode-tab active" type="button">🌐 Scrape Article URL</button>
+          <button id="modeTabScript" class="mode-tab" type="button">📝 Paste Custom Script / Text</button>
         </div>
 
-        <div class="quick-samples">
-          <span>Quick Demos:</span>
-          <button class="sample-btn" data-url="sample-nvidia">🟢 Nvidia Q2 Surges</button>
-          <button class="sample-btn" data-url="sample-rbi">🏛️ RBI MPC Minutes</button>
-          <button class="sample-btn" data-url="sample-buffett">🏛️ Warren Buffett T-Bills</button>
-          <button class="sample-btn" data-url="sample-trumpxi">⚡ Trump-Xi Trade Deal</button>
+        <!-- Tab 1: URL Scraping -->
+        <div id="modeUrlWrap" class="mode-content-wrap">
+          <div class="input-group scrape-row">
+            <input
+              type="url"
+              id="articleUrlInput"
+              placeholder="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
+              value="https://bigbreakingwire.in/nvidia-q2-fy2027-revenue-96-2-billion/"
+            />
+            <button id="scrapeBtn" class="primary-btn">
+              <span>⚡ Scrape & Auto-Script</span>
+              <div id="scrapeSpinner" class="spinner hidden"></div>
+            </button>
+          </div>
+
+          <div class="quick-samples">
+            <span>Quick Demos:</span>
+            <button class="sample-btn" data-url="sample-nvidia">🟢 Nvidia Q2 Surges</button>
+            <button class="sample-btn" data-url="sample-rbi">🏛️ RBI MPC Minutes</button>
+            <button class="sample-btn" data-url="sample-buffett">🏛️ Warren Buffett T-Bills</button>
+            <button class="sample-btn" data-url="sample-trumpxi">⚡ Trump-Xi Trade Deal</button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Custom Script Parsing -->
+        <div id="modeScriptWrap" class="mode-content-wrap hidden">
+          <div class="input-group">
+            <label for="customScriptInput">Custom Script or Article Summary</label>
+            <textarea
+              id="customScriptInput"
+              rows="4"
+              placeholder="Paste any script or story text... (e.g. India's GDP surged 7.8% this quarter, beating all estimates. Real economic output jumped strongly while retail inflation cooled to 4.9%. Follow BigBreakingWire for daily market updates.)"
+            ></textarea>
+          </div>
+          <div style="margin-top: 10px;">
+            <button id="parseScriptBtn" class="primary-btn" style="width: 100%;">
+              <span>✨ Extract Storyboard & Auto-Find Image</span>
+              <div id="parseScriptSpinner" class="spinner hidden"></div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -253,9 +280,14 @@
         <div class="input-group" style="margin-top: 18px;">
           <div class="script-header-row">
             <label for="narrationScript">High-Retention Narration Script (Voiceover)</label>
-            <button type="button" id="polishScriptBtn" class="small-action-btn" title="Optimize script for high viewer retention">
-              ✨ Polish Viral Hook
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="syncFromNarrationBtn" class="small-action-btn" title="Extract 3D scenes, Twitter card, charts, and auto-find image from this script">
+                🔄 Auto-Sync Storyboard & Image
+              </button>
+              <button type="button" id="polishScriptBtn" class="small-action-btn" title="Optimize script for high viewer retention">
+                ✨ Polish Hook
+              </button>
+            </div>
           </div>
           <textarea id="narrationScript" rows="4" placeholder="Nvidia has officially delivered one of the most explosive quarters in corporate history..."></textarea>
           

@@ -32,6 +32,31 @@ const CURATED_BROLL_MEDIA = {
   'rbi': [
     'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=1920&q=85', // Central banking & currency
     'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=85'  // Financial tower
+  ],
+  'india': [
+    'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=1920&q=85', // India landmark / cityscape
+    'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=1920&q=85', // India Gateway / skyline
+    'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=1920&q=85'  // Modern Mumbai Skyline
+  ],
+  'gold': [
+    'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1920&q=85', // Gold bullion bars
+    'https://images.unsplash.com/photo-1610375461369-d613b564f4c4?w=1920&q=85'  // Gold coins and investment
+  ],
+  'crypto': [
+    'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=85', // Tech circuit
+    'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=1920&q=85'  // Bitcoin & crypto trading
+  ],
+  'trump': [
+    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1920&q=85', // Washington DC / Capitol
+    'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1920&q=85'  // US flag & international diplomacy
+  ],
+  'realestate': [
+    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&q=85', // Luxury architectural property
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1920&q=85'  // Modern corporate glass buildings
+  ],
+  'energy': [
+    'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?w=1920&q=85', // Energy grid & petroleum
+    'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1920&q=85'  // Modern green & industrial energy
   ]
 };
 
@@ -67,7 +92,7 @@ async function downloadFile(url, destPath) {
   });
 }
 
-// Fetch B-Roll for any keyword
+// Fetch B-Roll or image for any keyword
 async function fetchBRollForKeyword(keyword = 'finance') {
   const cleanKey = keyword.toLowerCase().trim();
   const slug = cleanKey.replace(/[^a-z0-9]+/g, '_');
@@ -97,16 +122,20 @@ async function fetchBRollForKeyword(keyword = 'finance') {
   }
 
   if (!mediaUrl) {
-    if (cleanKey.includes('chip') || cleanKey.includes('ai') || cleanKey.includes('gpu') || cleanKey.includes('tech')) {
+    if (cleanKey.includes('chip') || cleanKey.includes('ai') || cleanKey.includes('gpu') || cleanKey.includes('tech') || cleanKey.includes('software')) {
       mediaUrl = CURATED_BROLL_MEDIA['tech'][0];
-    } else if (cleanKey.includes('rate') || cleanKey.includes('bank') || cleanKey.includes('market') || cleanKey.includes('stock')) {
+    } else if (cleanKey.includes('rate') || cleanKey.includes('bank') || cleanKey.includes('market') || cleanKey.includes('stock') || cleanKey.includes('money')) {
       mediaUrl = CURATED_BROLL_MEDIA['finance'][0];
+    } else if (cleanKey.includes('gold') || cleanKey.includes('silver') || cleanKey.includes('metal')) {
+      mediaUrl = CURATED_BROLL_MEDIA['gold'][0];
+    } else if (cleanKey.includes('india') || cleanKey.includes('gdp') || cleanKey.includes('rupee')) {
+      mediaUrl = CURATED_BROLL_MEDIA['india'][0];
     } else {
       mediaUrl = CURATED_BROLL_MEDIA['news'][0];
     }
   }
 
-  console.log(`[B-Roll Engine] Fetching B-roll for "${keyword}"...`);
+  console.log(`[B-Roll Engine] Fetching image for "${keyword}"...`);
   try {
     await downloadFile(mediaUrl, localFilePath);
     console.log(`[B-Roll Engine] Saved locally to ${localFileName}`);
