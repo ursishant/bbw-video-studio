@@ -6,7 +6,7 @@ const { exec } = require('child_process');
 const { scrapeArticle } = require('./scraper');
 const { generateSpeechWithTimestamps } = require('./tts');
 const { fetchBRollForKeyword } = require('./broll');
-const { parseScriptToStoryboard } = require('./scriptParser');
+const { parseScriptToStoryboard, cleanRawText } = require('./scriptParser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -70,13 +70,14 @@ app.post('/api/scrape', async (req, res) => {
 // 1.5. Parse Custom Script into 3D Storyboard & Find Image
 app.post('/api/parse-script', async (req, res) => {
   try {
-    const { scriptText, title } = req.body;
+    const { scriptText, title, sceneOrder } = req.body;
     if (!scriptText || !scriptText.trim()) {
       return res.status(400).json({ error: 'Script text is required' });
     }
 
-    console.log(`[Script Parser] Extracting storyboard from script (${scriptText.length} chars)...`);
-    const storyboardData = await parseScriptToStoryboard(scriptText, title || '');
+    const cleanInput = cleanRawText(scriptText);
+    console.log(`[Script Parser] Extracting storyboard from script (${cleanInput.length} chars)...`);
+    const storyboardData = await parseScriptToStoryboard(cleanInput, title || '', sceneOrder || 'hook-first');
     res.json({ success: true, data: storyboardData });
   } catch (error) {
     console.error('[Script Parser Error]', error);
@@ -104,11 +105,12 @@ app.post('/api/generate-voice', async (req, res) => {
       return res.status(400).json({ error: 'Text is required' });
     }
 
+    const cleanText = cleanRawText(text);
     const audioFilename = `narration_${Date.now()}.mp3`;
     const outputPath = path.join(__dirname, '../public/audio', audioFilename);
 
-    console.log(`[TTS] Generating voiceover (${voice}, ${rate}) for: "${text.substring(0, 60)}..."`);
-    const ttsResult = await generateSpeechWithTimestamps(text, outputPath, voice, rate);
+    console.log(`[TTS] Generating voiceover (${voice}, ${rate}) for: "${cleanText.substring(0, 60)}..."`);
+    const ttsResult = await generateSpeechWithTimestamps(cleanText, outputPath, voice, rate);
 
     res.json({
       success: true,

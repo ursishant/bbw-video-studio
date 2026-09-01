@@ -3,6 +3,7 @@ const { fetchBRollForKeyword } = require('./broll');
 /**
  * Intelligent Script Parser & Storyboard Extractor for BigBreakingWire
  * Converts any raw narration script, bullet notes, or article text into a complete 9:16 Shorts storyboard:
+ * - Sanitizes dirty markdown (**, *, ~~), URI encodings (%20, %22, %2C), and HTML tags
  * - Detects & extracts structured section blocks (handling heading lines cleanly with NO duplicate words)
  * - Finds & downloads matching high-res Stock/B-roll Imagery
  * - Generates Twitter Hook Card (Scene 1)
@@ -10,6 +11,85 @@ const { fetchBRollForKeyword } = require('./broll');
  * - Generates Multi-Section 3D Article Cards (Scene 3)
  * - Polishes Full Narration & Pacing
  */
+
+/**
+ * Clean dirty formatting artifacts from raw user inputs:
+ * - URL Encoded characters (e.g. %20 -> space, %27 -> ', %22 -> ", %2C -> ,, etc.)
+ * - Markdown bold/italics/strikethrough/backticks (**, *, __, _, ~~, ```, `)
+ * - HTML entities & tags (<p>, &nbsp;, &amp;, etc.)
+ * - Stray punctuation and excess whitespace
+ */
+function cleanRawText(text) {
+  if (!text || typeof text !== 'string') return '';
+
+  let cleaned = text;
+
+  // 1. URL Decode percent-encoded strings (%20, %22, %27, %2C, %26, etc.)
+  try {
+    if (/%[0-9A-Fa-f]{2}/.test(cleaned)) {
+      cleaned = decodeURIComponent(cleaned.replace(/\+/g, '%20'));
+    }
+  } catch (e) {
+    // Manual fallback for common URL encodings
+    cleaned = cleaned
+      .replace(/%20/gi, ' ')
+      .replace(/%22/gi, '"')
+      .replace(/%27/gi, "'")
+      .replace(/%26/gi, '&')
+      .replace(/%2C/gi, ',')
+      .replace(/%2F/gi, '/')
+      .replace(/%3A/gi, ':')
+      .replace(/%3F/gi, '?')
+      .replace(/%3D/gi, '=')
+      .replace(/%2B/gi, '+')
+      .replace(/%0A/gi, '\n')
+      .replace(/%0D/gi, '');
+  }
+
+  // 2. Remove Markdown bold, italics, strikethrough, backticks, citations
+  cleaned = cleaned
+    .replace(/\*\*(.*?)\*\*/g, '$1')     // **bold** -> bold
+    .replace(/\*(.*?)\*/g, '$1')         // *italic* -> italic
+    .replace(/__(.*?)__/g, '$1')         // __bold__ -> bold
+    .replace(/_(.*?)_/g, '$1')           // _italic_ -> italic
+    .replace(/~~(.*?)~~/g, '$1')         // ~~strike~~ -> strike
+    .replace(/`{1,3}(.*?)`{1,3}/g, '$1') // `code` -> code
+    .replace(/\[\d+\]/g, '')             // [1], [2] citations -> empty
+    .replace(/\*{2,}/g, '')              // leftover stray **
+    .replace(/_{2,}/g, '');              // leftover stray __
+
+  // 3. Clean HTML tags & entities
+  cleaned = cleaned
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–');
+
+  // 4. Remove leftover markdown headers/bullets at line starts while preserving structure
+  cleaned = cleaned
+    .split('\n')
+    .map(line => {
+      return line
+        .replace(/^#{1,6}\s+/, '')      // ### Header
+        .replace(/^[\*\-\+\•\–\—]\s+/, '') // * bullet or - bullet
+        .replace(/^\d+[\.\)]\s+/, '')    // 1. bullet or 1) bullet
+        .trim();
+    })
+    .join('\n');
+
+  // 5. Clean excessive spaces
+  cleaned = cleaned
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .trim();
+
+  return cleaned;
+}
 
 function extractKeywordsAndTopic(text) {
   const lower = text.toLowerCase();
@@ -58,7 +138,7 @@ function extractKeywordsAndTopic(text) {
  */
 function cleanDuplicateConsecutiveWords(text) {
   if (!text) return text;
-  let cleaned = text.trim();
+  let cleaned = cleanRawText(text);
 
   // 1. Remove duplicate adjacent phrases e.g. "Services Lead Services lead..." -> "Services lead..."
   // "Investment Surges Investment surges..." -> "Investment surges..."
@@ -77,8 +157,8 @@ function cleanDuplicateConsecutiveWords(text) {
  * Parses raw text into clean semantic blocks (pairing subheadings with their content)
  */
 function parseScriptBlocks(rawText) {
-  // Normalize line endings
-  const lines = rawText.replace(/\r\n/g, '\n').split('\n').map(l => l.trim()).filter(Boolean);
+  const sanitized = cleanRawText(rawText);
+  const lines = sanitized.replace(/\r\n/g, '\n').split('\n').map(l => l.trim()).filter(Boolean);
   const blocks = [];
 
   let currentHeading = null;
@@ -118,7 +198,7 @@ function parseScriptBlocks(rawText) {
 }
 
 function generateHeadlineFromScript(scriptText, topicInfo) {
-  const clean = scriptText.replace(/[\n\r]+/g, ' ').trim();
+  const clean = cleanRawText(scriptText).replace(/[\n\r]+/g, ' ').trim();
   const percentMatch = clean.match(/\b\d+(\.\d+)?%/);
   const moneyMatch = clean.match(/(\$|₹|Rs\.?\s?)[\d,.]+\s*(billion|million|trillion|crore|lakh|B|M|T)?/i);
 
@@ -152,12 +232,12 @@ function generateHeadlineFromScript(scriptText, topicInfo) {
 }
 
 function autoDetectChartFromScript(scriptText) {
-  const text = scriptText.toLowerCase();
+  const text = cleanRawText(scriptText).toLowerCase();
 
   // 1. Lakh Crore comparison (e.g. ₹81.36 lakh crore from ₹75.46 lakh crore)
   const lakhCroreMatches = [...text.matchAll(/(?:₹|rs\.?\s*)(\d+(?:\.\d+)?)\s*lakh\s*crore/gi)];
   if (lakhCroreMatches.length >= 2) {
-    const v1 = parseFloat(lakhCroreMatches[1][1]); // earlier baseline usually second in "rises to B from A"
+    const v1 = parseFloat(lakhCroreMatches[1][1]);
     const v2 = parseFloat(lakhCroreMatches[0][1]);
     const num1 = Math.min(v1, v2);
     const num2 = Math.max(v1, v2);
@@ -242,12 +322,13 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
     throw new Error('Script text cannot be empty');
   }
 
-  const topicInfo = extractKeywordsAndTopic(rawScript);
+  const cleanScript = cleanRawText(rawScript);
+  const topicInfo = extractKeywordsAndTopic(cleanScript);
 
-  // Generate or determine headline (if titleOverride is empty or is an old preset from a different topic, generate fresh)
-  let headline = titleOverride.trim();
+  // Generate or determine headline
+  let headline = cleanRawText(titleOverride).trim();
   if (!headline || (headline.toLowerCase().includes('nvidia') && topicInfo.topic !== 'nvidia')) {
-    headline = generateHeadlineFromScript(rawScript, topicInfo);
+    headline = generateHeadlineFromScript(cleanScript, topicInfo);
   }
 
   // 1. Fetch / Find matching high-res image
@@ -262,7 +343,7 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
   }
 
   // 2. Parse into structured blocks with clean headings & deduplicated content
-  const blocks = parseScriptBlocks(rawScript);
+  const blocks = parseScriptBlocks(cleanScript);
 
   const cleanSentences = [];
   const articleSections = [];
@@ -278,7 +359,7 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
 
     // Pick icon
     const icon = headingIcons[i % headingIcons.length];
-    const headingText = b.heading ? `${icon} ${b.heading}` : `${icon} Key Takeaway ${i + 1}`;
+    const headingText = b.heading ? `${icon} ${cleanRawText(b.heading)}` : `${icon} Key Takeaway ${i + 1}`;
 
     articleSections.push({
       heading: headingText,
@@ -289,10 +370,9 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
 
   // If no structured blocks were found, fallback to sentence splitting
   if (cleanSentences.length === 0) {
-    const rawSentences = rawScript
-      .replace(/[*_~`#]/g, '')
+    const rawSentences = cleanScript
       .split(/(?<=[.!?])\s+/)
-      .map(s => s.trim())
+      .map(s => cleanRawText(s).trim())
       .filter(s => s.length > 10);
 
     for (let i = 0; i < rawSentences.length; i++) {
@@ -308,8 +388,7 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
 
   // 3. Twitter Hook Card Bullet Points (Scene 1)
   const bulletPoints = cleanSentences.slice(0, 3).map(s => {
-    // Clean bullet string
-    return s.replace(/^[!—\s]+/, '').trim();
+    return cleanRawText(s).replace(/^[!—\s]+/, '').trim();
   });
 
   if (bulletPoints.length === 1) {
@@ -321,7 +400,7 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
   const highlightPhrase = highlightMatch ? highlightMatch[0] : (bulletPoints[0]?.slice(0, 35) || "Breaking Market Update");
 
   // 4. Auto-Detect Chart
-  const chartData = autoDetectChartFromScript(rawScript);
+  const chartData = autoDetectChartFromScript(cleanScript);
 
   // 5. Build clean, non-repetitive narration script
   let fullNarration = cleanSentences.join(' ').replace(/\s+/g, ' ').trim();
@@ -349,7 +428,7 @@ async function parseScriptToStoryboard(rawScript, titleOverride = '', sceneOrder
       highlightPhrase
     },
     chartData,
-    articleSections: articleSections.slice(0, 4), // keep 2-4 clean scenes
+    articleSections: articleSections.slice(0, 4),
     takeaways: bulletPoints,
     fullNarration,
     outro: {
@@ -368,5 +447,6 @@ module.exports = {
   extractKeywordsAndTopic,
   autoDetectChartFromScript,
   parseScriptBlocks,
-  cleanDuplicateConsecutiveWords
+  cleanDuplicateConsecutiveWords,
+  cleanRawText
 };

@@ -274,6 +274,77 @@ const prevImg = document.getElementById('prevImg');
 const prevDomain = document.getElementById('prevDomain');
 const prevActiveSub = document.getElementById('prevActiveSub');
 
+// Clean dirty formatting artifacts (**, %20, HTML, etc.)
+function cleanRawText(text) {
+  if (!text || typeof text !== 'string') return '';
+  let cleaned = text;
+
+  // 1. URL Decode percent-encoded strings (%20, %22, %27, %2C, etc.)
+  try {
+    if (/%[0-9A-Fa-f]{2}/.test(cleaned)) {
+      cleaned = decodeURIComponent(cleaned.replace(/\+/g, '%20'));
+    }
+  } catch (e) {
+    cleaned = cleaned
+      .replace(/%20/gi, ' ')
+      .replace(/%22/gi, '"')
+      .replace(/%27/gi, "'")
+      .replace(/%26/gi, '&')
+      .replace(/%2C/gi, ',')
+      .replace(/%2F/gi, '/')
+      .replace(/%3A/gi, ':')
+      .replace(/%3F/gi, '?')
+      .replace(/%3D/gi, '=')
+      .replace(/%2B/gi, '+')
+      .replace(/%0A/gi, '\n')
+      .replace(/%0D/gi, '');
+  }
+
+  // 2. Remove Markdown bold, italics, strikethrough, backticks, citations
+  cleaned = cleaned
+    .replace(/\*\*(.*?)\*\*/g, '$1')     // **bold** -> bold
+    .replace(/\*(.*?)\*/g, '$1')         // *italic* -> italic
+    .replace(/__(.*?)__/g, '$1')         // __bold__ -> bold
+    .replace(/_(.*?)_/g, '$1')           // _italic_ -> italic
+    .replace(/~~(.*?)~~/g, '$1')         // ~~strike~~ -> strike
+    .replace(/`{1,3}(.*?)`{1,3}/g, '$1') // `code` -> code
+    .replace(/\[\d+\]/g, '')             // [1], [2] citations -> empty
+    .replace(/\*{2,}/g, '')              // leftover stray **
+    .replace(/_{2,}/g, '');              // leftover stray __
+
+  // 3. Clean HTML tags & entities
+  cleaned = cleaned
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&mdash;/gi, '—')
+    .replace(/&ndash;/gi, '–');
+
+  // 4. Remove leftover markdown headers/bullets at line starts
+  cleaned = cleaned
+    .split('\n')
+    .map(line => {
+      return line
+        .replace(/^#{1,6}\s+/, '')      // ### Header
+        .replace(/^[\*\-\+\•\–\—]\s+/, '') // * bullet or - bullet
+        .replace(/^\d+[\.\)]\s+/, '')    // 1. bullet or 1) bullet
+        .trim();
+    })
+    .join('\n');
+
+  // 5. Clean excessive spaces
+  cleaned = cleaned
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .trim();
+
+  return cleaned;
+}
+
 // Live Script Gauge Updater
 function updateScriptGauge() {
   const text = narrationScript.value.trim();
@@ -614,9 +685,14 @@ scrapeBtn.addEventListener('click', async () => {
 
 // 1.5. Extract Storyboard & Image from Custom Script
 async function handleParseScript(scriptText, spinnerEl, btnEl) {
-  if (!scriptText || !scriptText.trim()) {
+  const cleanedScript = cleanRawText(scriptText);
+  if (!cleanedScript || !cleanedScript.trim()) {
     alert('Please enter or paste your script text first!');
     return;
+  }
+
+  if (customScriptInput && customScriptInput.value !== cleanedScript) {
+    customScriptInput.value = cleanedScript;
   }
 
   if (spinnerEl) spinnerEl.classList.remove('hidden');
@@ -627,7 +703,7 @@ async function handleParseScript(scriptText, spinnerEl, btnEl) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        scriptText: scriptText.trim(),
+        scriptText: cleanedScript,
         title: "",
         sceneOrder: sceneOrderSelect ? sceneOrderSelect.value : 'hook-first'
       })
